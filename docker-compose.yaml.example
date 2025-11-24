@@ -1,0 +1,9 @@
+services:
+  is-slack-down:
+    image: is-slack-down:latest
+    secrets:
+      - DISCORD_TOKEN
+
+secrets:
+  DISCORD_TOKEN:
+    file: ./secret
