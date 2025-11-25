@@ -25,6 +25,45 @@ slack_is_up = False
 already_pinged = False
 monitoring_enabled = False
 
+async def sync_message_reactions():
+    """Check all reactions on the message and sync roles"""
+    channel = bot.get_channel(CHANNEL_ID)
+    if not channel:
+        print("Channel not found")
+        return
+    
+    # Find the message with our text
+    message_to_sync = None
+    async for message in channel.history(limit=100):
+        if message.author == bot.user and MESSAGE_TEXT in message.content:
+            message_to_sync = message
+            break
+    
+    if not message_to_sync:
+        print("Message not found")
+        return
+    
+    print(f"Syncing reactions for message {message_to_sync.id}")
+    guild = channel.guild
+    role = guild.get_role(ROLE_ID)
+    
+    if not role:
+        print(f"Role {ROLE_ID} not found")
+        return
+    
+    # Get all users who reacted with the money_mouth emoji
+    for reaction in message_to_sync.reactions:
+        if str(reaction.emoji) == '🤑':
+            async for user in reaction.users():
+                if not user.bot:
+                    member = guild.get_member(user.id)
+                    if member and role not in member.roles:
+                        try:
+                            await member.add_roles(role)
+                            print(f'Synced role for {member}: {role.name}')
+                        except Exception as e:
+                            print(f"Error adding role to {member}: {e}")
+
 @bot.event
 async def on_ready():
     global monitoring_enabled
@@ -57,6 +96,8 @@ async def on_ready():
         async for message in channel.history(limit=100):
             if message.author == bot.user and MESSAGE_TEXT in message.content:
                 print(f'Message already exists: {message.id}')
+                # Sync reactions on startup
+                await sync_message_reactions()
                 return
         
         # Send new message
