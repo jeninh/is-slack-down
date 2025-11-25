@@ -1,9 +1,17 @@
-import discord
-from discord.ext import commands, tasks
-import os
-from dotenv import load_dotenv
-import aiohttp
-import json
+#! /usr/bin/python
+import traceback
+try:
+    import discord
+    from discord.ext import commands, tasks
+    import os
+    from dotenv import load_dotenv
+    import aiohttp
+    import json
+except Exception as e:
+    print("--- Environment error! Details are listed below.")
+    traceback.print_exc()
+    exit(2)
+
 
 load_dotenv()
 
@@ -230,10 +238,17 @@ async def check_slack_status():
             await channel.send("Slack is still down :(")
 
 # Run the bot
-TOKEN = os.getenv('DISCORD_TOKEN')
+try:
+    with open("/run/secrets/DISCORD_TOKEN", "r") as docker_secret:
+        TOKEN = docker_secret.read().strip()
+except Exception as e:
+    print(e)
+    print(os.listdir("/run/secrets"))
+    TOKEN = os.getenv('DISCORD_TOKEN')
 print(f"Token loaded: {TOKEN[:10] if TOKEN else 'None'}...")
 if not TOKEN:
     print("Error: No token found")
+    exit(126)
 else:
     print("Token found, attempting connection...")
     bot.run(TOKEN)
